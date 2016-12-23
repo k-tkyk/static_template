@@ -1,6 +1,9 @@
 var path = require('path')
 var config = require('../config')
 var utils = require('./utils')
+
+var SpritesmithPlugin = require('webpack-spritesmith');
+
 var projectRoot = path.resolve(__dirname, '../')
 
 var env = process.env.NODE_ENV
@@ -26,8 +29,12 @@ module.exports = {
       'vue$': 'vue/dist/vue.common.js',
       'src': path.resolve(__dirname, '../src'),
       'assets': path.resolve(__dirname, '../src/assets'),
-      'components': path.resolve(__dirname, '../src/components')
-    }
+      'components': path.resolve(__dirname, '../src/components'),
+      'generated': path.resolve(__dirname, '../src/assets/generated'),
+    },
+    moduleDirectories: [
+      'web_modules', 'node_modules', 'generated'
+    ]
   },
   resolveLoader: {
     fallback: [path.join(__dirname, '../node_modules')]
@@ -63,19 +70,44 @@ module.exports = {
         loader: 'json'
       },
       {
-        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
-        loader: 'url',
+        test: /\.styl$/,
+        loaders: [
+          'style',
+          'css',
+          'stylus'
+        ]
+      },
+      {
+        test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+        // loader: 'url',
+        loader: 'file',
         query: {
-          limit: 10000,
+          // limit: 10000,
+          name: utils.assetsPath('fonts/[name].[hash:7].[ext]')
+        }
+      },
+      {
+        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+        loader: 'file',
+        query: {
           name: utils.assetsPath('img/[name].[hash:7].[ext]')
         }
       },
       {
-        test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
-        loader: 'url',
+        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+        loader: 'image-webpack',
         query: {
-          limit: 10000,
-          name: utils.assetsPath('fonts/[name].[hash:7].[ext]')
+          bypassOnDebug: true,
+          progressive: true,
+          optimizationLevel: 7,
+          interlaced: false,
+          mozjpeg: {
+            quality: 65
+          },
+          pngquant: {
+            quality: '65-90',
+            speed: 4
+          }
         }
       }
     ]
@@ -90,5 +122,20 @@ module.exports = {
         browsers: ['last 2 versions']
       })
     ]
-  }
+  },
+  plugins: [
+    new SpritesmithPlugin({
+      src: {
+        cwd: path.resolve(__dirname, '../src/assets/img/sprites'),
+        glob: '*.png'
+      },
+      target: {
+        image: path.resolve(__dirname, '../src/assets/generated/sprite.png'),
+        css: path.resolve(__dirname, '../src/assets/generated/sprite.styl')
+      },
+      apiOptions: {
+        cssImageRef: '~generated/sprite.png'
+      }
+    })
+  ]
 }
